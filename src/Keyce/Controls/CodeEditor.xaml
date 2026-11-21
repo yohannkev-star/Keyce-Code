@@ -1,0 +1,37 @@
+<UserControl x:Class="Keyce.Controls.CodeEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit">
+    <Grid Background="{DynamicResource Editor.Background}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border x:Name="FindBar" Grid.Row="0" Padding="8,5"
+                Background="{DynamicResource Sidebar.Background}"
+                BorderBrush="{DynamicResource Border.Default}" BorderThickness="0,0,0,1"
+                Visibility="Collapsed">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="×" Padding="7,2" Margin="6,0,0,0"
+                        ToolTip="Fermer la recherche (Échap)" Click="CloseFind_Click"/>
+                <Button DockPanel.Dock="Right" Content="Suivant" Padding="8,2" Margin="4,0,0,0"
+                        Click="FindNext_Click"/>
+                <Button DockPanel.Dock="Right" Content="Précédent" Padding="8,2" Margin="4,0,0,0"
+                        Click="FindPrevious_Click"/>
+                <TextBox x:Name="FindTextBox" MinWidth="180" VerticalContentAlignment="Center"
+                         KeyDown="FindTextBox_KeyDown"/>
+            </DockPanel>
+        </Border>
+
+        <avalonedit:TextEditor x:Name="TextEditorControl" Grid.Row="1"
+                               ShowLineNumbers="True"
+                               FontFamily="{DynamicResource Fonts.Code}" FontSize="14"
+                               Background="{DynamicResource Editor.Background}"
+                               Foreground="{DynamicResource Editor.Foreground}"
+                               LineNumbersForeground="{DynamicResource Editor.LineNumber}"
+                               WordWrap="False"
+                               HorizontalScrollBarVisibility="Auto"
+                               VerticalScrollBarVisibility="Auto"/>
+    </Grid>
+</UserControl>
