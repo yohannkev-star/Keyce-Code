@@ -16,8 +16,12 @@ public interface IRunnerService
     /// </summary>
     event EventHandler<(string Line, bool IsError)>? OutputReceived;
 
-    /// <summary>Exécute le fichier et attend la fin. Annulable avec le jeton.</summary>
-    Task<ExecutionResult> RunAsync(string filePath, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Exécute un projet ou un fichier et attend la fin. Annulable avec le jeton.
+    /// path = dossier contenant un .csproj (dotnet build puis dotnet run)
+    /// ou chemin d'un fichier à lancer (.py, .js, .java, .c).
+    /// </summary>
+    Task<ExecutionResult> RunAsync(string path, CancellationToken cancellationToken = default);
 
     /// <summary>Arrête l'exécution en cours, s'il y en a une.</summary>
     void Stop();
