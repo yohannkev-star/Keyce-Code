@@ -1,0 +1,69 @@
+<UserControl x:Class="Keyce.Controls.EditorTabs"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Keyce.Controls"
+             PreviewKeyDown="EditorTabs_PreviewKeyDown">
+    <Grid Background="{DynamicResource Editor.Background}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ListBox x:Name="TabsList" Grid.Row="0" ItemsSource="{Binding Documents, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                 SelectedItem="{Binding SelectedDocument, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                 Background="{DynamicResource Tab.Background}" BorderThickness="0,0,0,1"
+                 BorderBrush="{DynamicResource Border.Default}" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectionChanged="TabsList_SelectionChanged">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Tab.Foreground}"/>
+                    <Setter Property="Background" Value="{DynamicResource Tab.Background}"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource Tab.ActiveForeground}"/>
+                            <Setter Property="Background" Value="{DynamicResource Tab.ActiveBackground}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource Tab.ActiveBorder}"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel MinHeight="34" MaxWidth="240" Margin="10,0,5,0" VerticalAlignment="Center">
+                        <Button DockPanel.Dock="Right" Content="×" Width="20" Height="20" Margin="8,0,0,0"
+                                Padding="0" BorderThickness="0" Background="Transparent"
+                                Foreground="{DynamicResource Text.Muted}" ToolTip="Fermer l'onglet"
+                                Click="CloseTab_Click"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text=" ●" Foreground="{DynamicResource Accent}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDirty}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <controls:CodeEditor x:Name="Editor" Grid.Row="1" TextChanged="Editor_TextChanged"/>
+    </Grid>
+</UserControl>
