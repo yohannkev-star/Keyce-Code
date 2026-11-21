@@ -1,0 +1,91 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ============ KEYCE CODE : palette Dark+ (source unique des couleurs) ============ -->
+    <!-- Utilisation : Background="{DynamicResource Editor.Background}" -->
+
+    <!-- Polices -->
+    <FontFamily x:Key="Fonts.Icon">Segoe MDL2 Assets</FontFamily>
+    <FontFamily x:Key="Fonts.Code">Consolas</FontFamily>
+    <FontFamily x:Key="Fonts.UI">Segoe UI</FontFamily>
+
+    <!-- Fenetre / general -->
+    <SolidColorBrush x:Key="Window.Background" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="Border.Default" Color="#3C3C3C"/>
+    <SolidColorBrush x:Key="Text.Default" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="Text.Muted" Color="#858585"/>
+    <SolidColorBrush x:Key="Accent" Color="#007ACC"/>
+
+    <!-- Barre d'activite -->
+    <SolidColorBrush x:Key="ActivityBar.Background" Color="#333333"/>
+    <SolidColorBrush x:Key="ActivityBar.Foreground" Color="#858585"/>
+    <SolidColorBrush x:Key="ActivityBar.ActiveForeground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ActivityBar.Indicator" Color="#FFFFFF"/>
+
+    <!-- Explorateur / panneau lateral -->
+    <SolidColorBrush x:Key="Sidebar.Background" Color="#252526"/>
+    <SolidColorBrush x:Key="Sidebar.Foreground" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="Sidebar.HeaderForeground" Color="#BBBBBB"/>
+    <SolidColorBrush x:Key="Sidebar.ItemHover" Color="#2A2D2E"/>
+    <SolidColorBrush x:Key="Sidebar.ItemSelected" Color="#37373D"/>
+
+    <!-- Onglets -->
+    <SolidColorBrush x:Key="Tab.Background" Color="#2D2D2D"/>
+    <SolidColorBrush x:Key="Tab.ActiveBackground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="Tab.Foreground" Color="#969696"/>
+    <SolidColorBrush x:Key="Tab.ActiveForeground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="Tab.ActiveBorder" Color="#007ACC"/>
+
+    <!-- Editeur -->
+    <SolidColorBrush x:Key="Editor.Background" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="Editor.Foreground" Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="Editor.LineNumber" Color="#858585"/>
+    <SolidColorBrush x:Key="Editor.Selection" Color="#264F78"/>
+    <SolidColorBrush x:Key="Editor.CurrentLine" Color="#282828"/>
+
+    <!-- Panneau bas -->
+    <SolidColorBrush x:Key="Panel.Background" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="Panel.Border" Color="#454545"/>
+    <SolidColorBrush x:Key="Panel.TabForeground" Color="#969696"/>
+    <SolidColorBrush x:Key="Panel.TabActiveForeground" Color="#E7E7E7"/>
+
+    <!-- Barre d'etat -->
+    <SolidColorBrush x:Key="StatusBar.Background" Color="#007ACC"/>
+    <SolidColorBrush x:Key="StatusBar.Foreground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="StatusBar.ItemHover" Color="#1F8AD2"/>
+
+    <!-- Menus -->
+    <SolidColorBrush x:Key="Menu.BarBackground" Color="#3C3C3C"/>
+    <SolidColorBrush x:Key="Menu.Background" Color="#252526"/>
+    <SolidColorBrush x:Key="Menu.Foreground" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="Menu.GestureForeground" Color="#8C8C8C"/>
+    <SolidColorBrush x:Key="Menu.TopHover" Color="#505050"/>
+    <SolidColorBrush x:Key="Menu.ItemHover" Color="#04395E"/>
+    <SolidColorBrush x:Key="Menu.Separator" Color="#454545"/>
+
+    <!-- Separateurs / scrollbars -->
+    <SolidColorBrush x:Key="Splitter.Background" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="Splitter.Hover" Color="#007ACC"/>
+    <SolidColorBrush x:Key="Scrollbar.Thumb" Color="#424242"/>
+    <SolidColorBrush x:Key="Scrollbar.ThumbHover" Color="#686868"/>
+
+    <!-- Boutons -->
+    <SolidColorBrush x:Key="Button.PrimaryBackground" Color="#0E639C"/>
+    <SolidColorBrush x:Key="Button.PrimaryHover" Color="#1177BB"/>
+    <SolidColorBrush x:Key="Button.IconHover" Color="#3C3C3C"/>
+    <SolidColorBrush x:Key="Link.Foreground" Color="#3794FF"/>
+
+    <!-- Console : sortie -->
+    <SolidColorBrush x:Key="Output.Error" Color="#F48771"/>
+    <SolidColorBrush x:Key="Output.Warning" Color="#CCA700"/>
+    <SolidColorBrush x:Key="Output.Info" Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="Output.Success" Color="#89D185"/>
+
+    <!-- Coloration syntaxique (pour le developpeur 2 : AvalonEdit) -->
+    <Color x:Key="Syntax.Keyword">#569CD6</Color>
+    <Color x:Key="Syntax.String">#CE9178</Color>
+    <Color x:Key="Syntax.Comment">#6A9955</Color>
+    <Color x:Key="Syntax.Type">#4EC9B0</Color>
+    <Color x:Key="Syntax.Number">#B5CEA8</Color>
+    <Color x:Key="Syntax.Method">#DCDCAA</Color>
+    <Color x:Key="Syntax.Control">#C586C0</Color>
+</ResourceDictionary>
