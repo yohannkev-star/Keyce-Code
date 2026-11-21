@@ -1,12 +1,212 @@
-﻿<Window x:Class="Keyce.MainWindow"
+<Window x:Class="Keyce.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Keyce"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Keyce Code" Width="1280" Height="760" MinWidth="800" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Window.Background}"
+        FontFamily="{StaticResource Fonts.UI}">
 
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Menu -->
+            <RowDefinition Height="*"/>      <!-- Zone principale -->
+            <RowDefinition Height="22"/>     <!-- Barre d'etat -->
+        </Grid.RowDefinitions>
+
+        <!-- ===================== MENU ===================== -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="_Fichier">
+                <MenuItem Header="Nouveau fichier" Command="New"/>
+                <MenuItem Header="Ouvrir un fichier..." Command="Open"/>
+                <MenuItem Header="Ouvrir un dossier..." Command="{x:Static local:AppCommands.OpenFolder}"/>
+                <MenuItem Header="Nouveau projet Console C#..." Command="{x:Static local:AppCommands.NewProject}"/>
+                <Separator/>
+                <MenuItem Header="Enregistrer" Command="Save"/>
+                <MenuItem Header="Tout enregistrer" Command="{x:Static local:AppCommands.SaveAll}"/>
+                <MenuItem Header="Fermer l'onglet" Command="{x:Static local:AppCommands.CloseTab}"/>
+                <Separator/>
+                <MenuItem Header="Quitter" InputGestureText="Alt+F4" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Édition">
+                <MenuItem Header="Annuler" Command="Undo"/>
+                <MenuItem Header="Rétablir" Command="Redo"/>
+                <Separator/>
+                <MenuItem Header="Couper" Command="Cut"/>
+                <MenuItem Header="Copier" Command="Copy"/>
+                <MenuItem Header="Coller" Command="Paste"/>
+                <Separator/>
+                <MenuItem Header="Rechercher" Command="Find"/>
+                <MenuItem Header="Aller à la ligne..." Command="{x:Static local:AppCommands.GoToLine}"/>
+            </MenuItem>
+            <MenuItem Header="_Affichage">
+                <MenuItem Header="Explorateur" Command="{x:Static local:AppCommands.ToggleExplorer}"/>
+                <MenuItem Header="Panneau (Sortie)" Command="{x:Static local:AppCommands.TogglePanel}" InputGestureText="Ctrl+`"/>
+            </MenuItem>
+            <MenuItem Header="E_xécuter">
+                <MenuItem Header="Exécuter" Command="{x:Static local:AppCommands.Run}"/>
+                <MenuItem Header="Arrêter" Command="{x:Static local:AppCommands.Stop}"/>
+            </MenuItem>
+            <MenuItem Header="_Aide">
+                <MenuItem Header="À propos de Keyce Code" Click="About_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- ===================== ZONE PRINCIPALE ===================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="48"/>                                    <!-- Barre d'activite -->
+                <ColumnDefinition x:Name="ExplorerColumn" Width="250" MinWidth="150"/>
+                <ColumnDefinition Width="Auto"/>                                  <!-- Separateur -->
+                <ColumnDefinition Width="*" MinWidth="300"/>                      <!-- Editeur + panneau bas -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Barre d'activite -->
+            <Border Grid.Column="0" Background="{DynamicResource ActivityBar.Background}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <ToggleButton x:Name="ExplorerButton" Style="{StaticResource ActivityToggle}"
+                                      Content="&#xE8B7;" IsChecked="True" ToolTip="Explorateur (Ctrl+B)"
+                                      Click="ExplorerButton_Click"/>
+                        <Button Style="{StaticResource ActivityButton}" Content="&#xE721;"
+                                ToolTip="Recherche (bientôt)" IsEnabled="False"/>
+                        <Button Style="{StaticResource ActivityButton}" Content="&#xE768;"
+                                ToolTip="Exécuter (F5)" Command="{x:Static local:AppCommands.Run}"/>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Style="{StaticResource ActivityButton}"
+                            Content="&#xE713;" ToolTip="Paramètres (bientôt)" IsEnabled="False"/>
+                </DockPanel>
+            </Border>
+
+            <!-- Explorateur -->
+            <Border x:Name="ExplorerPanel" Grid.Column="1" Background="{DynamicResource Sidebar.Background}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="35"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="EXPLORATEUR" FontSize="11" Margin="20,0,0,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Sidebar.HeaderForeground}"/>
+                    <!-- Le developpeur 3 injecte son arbre ici via SetExplorerContent(...) -->
+                    <ContentControl x:Name="ExplorerHost" Grid.Row="1">
+                        <StackPanel Margin="20,10" >
+                            <TextBlock Text="Aucun dossier ouvert." TextWrapping="Wrap"
+                                       Foreground="{DynamicResource Sidebar.Foreground}" Margin="0,0,0,12"/>
+                            <Button Content="Ouvrir un dossier" Style="{StaticResource PrimaryButton}"
+                                    Command="{x:Static local:AppCommands.OpenFolder}"/>
+                        </StackPanel>
+                    </ContentControl>
+                </Grid>
+            </Border>
+
+            <GridSplitter x:Name="ExplorerSplitter" Grid.Column="2" Width="4" HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch" ResizeDirection="Columns"
+                          Style="{StaticResource SplitterStyle}"/>
+
+            <!-- Editeur + panneau bas -->
+            <Grid Grid.Column="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="120"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition x:Name="PanelRow" Height="220" MinHeight="80"/>
+                </Grid.RowDefinitions>
+
+                <!-- Le developpeur 2 injecte l'editeur a onglets ici via SetEditorContent(...) -->
+                <ContentControl x:Name="EditorHost" Grid.Row="0" HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch" Background="{DynamicResource Editor.Background}">
+                    <!-- Ecran d'accueil -->
+                    <Grid Background="{DynamicResource Editor.Background}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="Keyce Code" FontSize="38" FontWeight="Light"
+                                       Foreground="{DynamicResource Text.Default}"/>
+                            <TextBlock Text="Bienvenue dans Keyce Code" FontSize="15" Margin="0,2,0,28"
+                                       Foreground="{DynamicResource Text.Muted}"/>
+                            <TextBlock Text="Démarrer" FontSize="16" Margin="0,0,0,8"
+                                       Foreground="{DynamicResource Text.Default}"/>
+                            <Button Content="Nouveau fichier" Style="{StaticResource LinkButton}" Command="New" Margin="0,3"/>
+                            <Button Content="Ouvrir un dossier..." Style="{StaticResource LinkButton}"
+                                    Command="{x:Static local:AppCommands.OpenFolder}" Margin="0,3"/>
+                            <Button Content="Nouveau projet Console C#..." Style="{StaticResource LinkButton}"
+                                    Command="{x:Static local:AppCommands.NewProject}" Margin="0,3"/>
+                            <TextBlock Text="Raccourcis" FontSize="16" Margin="0,24,0,8"
+                                       Foreground="{DynamicResource Text.Default}"/>
+                            <TextBlock Foreground="{DynamicResource Text.Muted}" LineHeight="22">
+                                Ctrl+N  Nouveau fichier<LineBreak/>
+                                Ctrl+O  Ouvrir un fichier<LineBreak/>
+                                Ctrl+S  Enregistrer<LineBreak/>
+                                Ctrl+B  Afficher / masquer l'explorateur<LineBreak/>
+                                Ctrl+`  Afficher / masquer le panneau bas<LineBreak/>
+                                F5  Exécuter
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </ContentControl>
+
+                <GridSplitter x:Name="PanelSplitter" Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+                              VerticalAlignment="Center" ResizeDirection="Rows"
+                              Style="{StaticResource SplitterStyle}"/>
+
+                <!-- Panneau bas (Sortie / Problemes) -->
+                <Border x:Name="BottomPanel" Grid.Row="2" Background="{DynamicResource Panel.Background}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="35"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Margin="16,0,8,0">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource IconButton}" Content="&#xE71A;" ToolTip="Arrêter (Maj+F5)"
+                                        Command="{x:Static local:AppCommands.Stop}"/>
+                                <Button Style="{StaticResource IconButton}" Content="&#xE74D;" ToolTip="Effacer la sortie"
+                                        Command="{x:Static local:AppCommands.ClearOutput}"/>
+                                <Button Style="{StaticResource IconButton}" Content="&#xE711;" ToolTip="Fermer le panneau (Ctrl+`)"
+                                        Command="{x:Static local:AppCommands.TogglePanel}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="OutputTab" Content="SORTIE" Style="{StaticResource PanelTab}"
+                                             GroupName="PanelTabs" IsChecked="True" Checked="PanelTab_Checked"/>
+                                <RadioButton x:Name="ProblemsTab" Content="PROBLÈMES" Style="{StaticResource PanelTab}"
+                                             GroupName="PanelTabs" Checked="PanelTab_Checked"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Le developpeur 4 injecte la console ici via SetOutputContent(...) -->
+                        <Grid Grid.Row="1">
+                            <ContentControl x:Name="OutputHost" Margin="16,4,0,0">
+                                <TextBlock Text="Aucune sortie pour le moment. Appuyez sur F5 pour exécuter."
+                                           FontFamily="{StaticResource Fonts.Code}" FontSize="13"
+                                           Foreground="{DynamicResource Text.Muted}"/>
+                            </ContentControl>
+                            <ContentControl x:Name="ProblemsHost" Margin="16,4,0,0" Visibility="Collapsed">
+                                <TextBlock Text="Aucun problème détecté." FontSize="13"
+                                           Foreground="{DynamicResource Text.Muted}"/>
+                            </ContentControl>
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Border Grid.Row="2" Height="1" VerticalAlignment="Top" Background="{DynamicResource Panel.Border}"
+                        IsHitTestVisible="False"/>
+            </Grid>
+        </Grid>
+
+        <!-- ===================== BARRE D'ETAT ===================== -->
+        <Border Grid.Row="2" Background="{DynamicResource StatusBar.Background}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusMessage" Text="Prêt" Margin="10,0" VerticalAlignment="Center" FontSize="12"
+                           Foreground="{DynamicResource StatusBar.Foreground}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="StatusToolchain" Style="{StaticResource StatusItem}" Content="SDK : détection..."/>
+                    <Button x:Name="StatusLanguage" Style="{StaticResource StatusItem}" Content="Texte brut"/>
+                    <Button x:Name="StatusEncoding" Style="{StaticResource StatusItem}" Content="UTF-8"/>
+                    <Button x:Name="StatusPosition" Style="{StaticResource StatusItem}" Content="Ln 1, Col 1"
+                            Command="{x:Static local:AppCommands.GoToLine}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
