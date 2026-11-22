@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <ListBox x:Name="TabsList" Grid.Row="0" ItemsSource="{Binding Documents, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                 SelectedItem="{Binding SelectedDocument, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                 SelectedItem="{Binding SelectedDocument, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
                  Background="{DynamicResource Tab.Background}" BorderThickness="0,0,0,1"
                  BorderBrush="{DynamicResource Border.Default}" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                  ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectionChanged="TabsList_SelectionChanged">
