@@ -1,0 +1,24 @@
+<UserControl x:Class="Keyce.Views.OutputPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Background="{DynamicResource Panel.Background}">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <TextBlock Text="SORTIE" Margin="8,4" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Panel.TabActiveForeground}"/>
+            <Button Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Arrêter (Stop)"
+                    Margin="4,2" Padding="6,2" Click="Stop_Click"
+                    Foreground="{DynamicResource Text.Default}" Background="Transparent" BorderThickness="0"/>
+            <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Effacer"
+                    Margin="0,2" Padding="6,2" Click="Clear_Click"
+                    Foreground="{DynamicResource Text.Default}" Background="Transparent" BorderThickness="0"/>
+        </StackPanel>
+        <RichTextBox x:Name="Output" IsReadOnly="True" FontFamily="Consolas" FontSize="13"
+                     Background="Transparent" BorderThickness="0"
+                     Foreground="{DynamicResource Output.Info}"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <FlowDocument PageWidth="5000">
+                <Paragraph x:Name="Para"/>
+            </FlowDocument>
+        </RichTextBox>
+    </DockPanel>
+</UserControl>
