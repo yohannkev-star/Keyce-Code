@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Input;
+using Keyce.Models;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -12,6 +14,8 @@ public partial class OutputPanel : UserControl
 {
     /// <summary>Bouton Stop cliqué : l'intégrateur appelle runner.Stop().</summary>
     public event Action? StopRequested;
+        /// <summary>Clic sur une erreur : (fichier, ligne). Relié à l'éditeur (D2).</summary>
+    public event Action<string, int>? ErrorClicked;
 
     public OutputPanel() => InitializeComponent();
 
@@ -28,20 +32,26 @@ public partial class OutputPanel : UserControl
             kind = parsed.Severity == "warning" ? OutputKind.Warning : OutputKind.Error;
         else if (line.Contains("warning", StringComparison.OrdinalIgnoreCase))
             kind = OutputKind.Warning;
-        Append(line, kind);
+        Append(line, kind, parsed);
     }
 
-    public void Append(string text, OutputKind kind = OutputKind.Info)
+        public void Append(string text, OutputKind kind = OutputKind.Info, ParsedError? parsed = null)
     {
-        // L'événement du runner arrive d'un thread secondaire
         if (!Dispatcher.CheckAccess())
         {
-            Dispatcher.BeginInvoke(() => Append(text, kind));
+            Dispatcher.BeginInvoke(() => Append(text, kind, parsed));
             return;
         }
 
         var run = new Run(text + "\n");
         if (BrushFor(kind) is Brush brush) run.Foreground = brush;
+
+        if (parsed != null)
+        {
+            run.Cursor = Cursors.Hand;
+            run.TextDecorations = TextDecorations.Underline;
+            run.MouseLeftButtonUp += (_, _) => ErrorClicked?.Invoke(parsed.File, parsed.Line);
+        }
 
         Para.Inlines.Add(run);
         if (Para.Inlines.Count > 5000) Para.Inlines.Remove(Para.Inlines.FirstInline!);
