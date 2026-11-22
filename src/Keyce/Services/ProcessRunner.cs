@@ -149,6 +149,12 @@ public sealed class ProcessRunner : IRunnerService
         new Step(exe, Array.Empty<string>(), directory)
     };
 }
+case ".java":
+    return new[]
+    {
+        new Step("javac", new[] { path }, directory),
+        new Step("java", new[] { "-cp", directory, Path.GetFileNameWithoutExtension(path) }, directory)
+    };
                 case ".js":
                     return new[] { new Step("node", new[] { path }, directory) };
                 default:
