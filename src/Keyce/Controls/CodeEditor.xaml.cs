@@ -150,7 +150,7 @@ public partial class CodeEditor : UserControl
             ".js" or ".jsx" or ".ts" or ".tsx" => "JavaScript",
             ".java" => "Java",
             ".cpp" or ".cc" or ".cxx" or ".h" or ".hpp" => "C++",
-            ".c" => "C",
+            ".c" => "C++",
             _ => null
         };
 
