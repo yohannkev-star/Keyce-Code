@@ -5,11 +5,12 @@
         Title="Keyce Code" Width="1280" Height="760" MinWidth="800" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Window.Background}"
-        FontFamily="{StaticResource Fonts.UI}">
+        FontFamily="{StaticResource Fonts.UI}" PreviewKeyDown="MainWindow_PreviewKeyDown">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Menu -->
+            <RowDefinition Height="42"/>    <!-- Barre de commande -->
             <RowDefinition Height="*"/>      <!-- Zone principale -->
             <RowDefinition Height="22"/>     <!-- Barre d'etat -->
         </Grid.RowDefinitions>
@@ -52,8 +53,36 @@
             </MenuItem>
         </Menu>
 
+        <Grid Grid.Row="1" Background="{DynamicResource Menu.BarBackground}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="220"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
+                <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Fonts.Icon}" FontSize="17"
+                           Foreground="{DynamicResource Accent}" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                <TextBlock Text="Keyce Code" Foreground="{DynamicResource Text.Default}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Border Grid.Column="1" MaxWidth="560" Height="28" HorizontalAlignment="Center"
+                    Background="{DynamicResource Window.Background}" BorderBrush="{DynamicResource Border.Default}"
+                    BorderThickness="1" CornerRadius="4">
+                <DockPanel Margin="8,0">
+                    <TextBlock Text="&#xE721;" FontFamily="{StaticResource Fonts.Icon}" FontSize="13"
+                               Foreground="{DynamicResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="CommandCenter" BorderThickness="0" Background="Transparent"
+                             Foreground="{DynamicResource Text.Default}" CaretBrush="{DynamicResource Text.Default}"
+                             VerticalContentAlignment="Center" FontSize="12"
+                             ToolTip="Chemin, nouveau, ouvrir, dossier, exécuter, explorateur, sortie"
+                             KeyDown="CommandCenter_KeyDown"/>
+                </DockPanel>
+            </Border>
+            <TextBlock Grid.Column="2" Text="Mini-IDE Windows" Margin="0,0,16,0" HorizontalAlignment="Right"
+                       VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource Text.Muted}"/>
+        </Grid>
+
         <!-- ===================== ZONE PRINCIPALE ===================== -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="48"/>                                    <!-- Barre d'activite -->
                 <ColumnDefinition x:Name="ExplorerColumn" Width="250" MinWidth="150"/>
@@ -191,7 +220,7 @@
         </Grid>
 
         <!-- ===================== BARRE D'ETAT ===================== -->
-        <Border Grid.Row="2" Background="{DynamicResource StatusBar.Background}">
+        <Border Grid.Row="3" Background="{DynamicResource StatusBar.Background}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

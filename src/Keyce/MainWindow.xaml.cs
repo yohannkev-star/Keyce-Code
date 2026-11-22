@@ -128,9 +128,14 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true)
             return;
 
-        _explorerViewModel.OpenFolder(dialog.FolderName);
-        _editorTabs.AddRecentWorkspace(dialog.FolderName);
-        SetStatusMessage($"Dossier ouvert : {dialog.FolderName}");
+        OpenFolderPath(dialog.FolderName);
+    }
+
+    private void OpenFolderPath(string path)
+    {
+        _explorerViewModel.OpenFolder(path);
+        _editorTabs.AddRecentWorkspace(path);
+        SetStatusMessage($"Dossier ouvert : {path}");
     }
 
     private void OpenRecentFolder(string path)
@@ -141,9 +146,63 @@ public partial class MainWindow : Window
             return;
         }
 
-        _explorerViewModel.OpenFolder(path);
-        _editorTabs.AddRecentWorkspace(path);
-        SetStatusMessage($"Dossier ouvert : {path}");
+        OpenFolderPath(path);
+    }
+
+    private void CommandCenter_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        e.Handled = true;
+        var input = CommandCenter.Text.Trim().Trim('"');
+        CommandCenter.Clear();
+        if (string.IsNullOrWhiteSpace(input)) return;
+
+        switch (input.ToLowerInvariant())
+        {
+            case "nouveau":
+            case "new":
+                NewFileRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            case "ouvrir":
+            case "open":
+                OpenFileRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            case "dossier":
+            case "folder":
+                OpenFolderRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            case "exécuter":
+            case "executer":
+            case "run":
+                RunRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            case "explorateur":
+            case "explorer":
+                if (!_explorerVisible) ToggleExplorer();
+                return;
+            case "sortie":
+            case "terminal":
+            case "output":
+                ShowOutputPanel();
+                return;
+        }
+
+        if (File.Exists(input))
+            _ = OpenEditorFileAsync(Path.GetFullPath(input));
+        else if (Directory.Exists(input))
+            OpenFolderPath(Path.GetFullPath(input));
+        else
+            SetStatusMessage($"Aucun fichier, dossier ou commande trouvé pour « {input} ».");
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.P)
+        {
+            CommandCenter.Focus();
+            CommandCenter.SelectAll();
+            e.Handled = true;
+        }
     }
 
     private async Task SaveEditorAsync()
