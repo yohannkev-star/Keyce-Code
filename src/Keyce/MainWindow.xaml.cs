@@ -65,6 +65,7 @@ public partial class MainWindow : Window
         _editorTabs.CaretPositionChanged += (_, _) =>
             SetCaretPosition(_editorTabs.CaretLine, _editorTabs.CaretColumn);
         _editorTabs.Initialize(_editorService);
+        _editorTabs.RecentWorkspaceRequested += OpenRecentFolder;
         SetEditorContent(_editorTabs);
 
         var explorer = new ExplorerPanel { DataContext = _explorerViewModel };
@@ -128,7 +129,21 @@ public partial class MainWindow : Window
             return;
 
         _explorerViewModel.OpenFolder(dialog.FolderName);
+        _editorTabs.AddRecentWorkspace(dialog.FolderName);
         SetStatusMessage($"Dossier ouvert : {dialog.FolderName}");
+    }
+
+    private void OpenRecentFolder(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            SetStatusMessage("Ce dossier récent n’existe plus.");
+            return;
+        }
+
+        _explorerViewModel.OpenFolder(path);
+        _editorTabs.AddRecentWorkspace(path);
+        SetStatusMessage($"Dossier ouvert : {path}");
     }
 
     private async Task SaveEditorAsync()
@@ -382,7 +397,11 @@ public partial class MainWindow : Window
     public void SetLanguage(string language) => StatusLanguage.Content = language;
     public void SetEncoding(string encoding) => StatusEncoding.Content = encoding;
     /// <summary>Ex. "SDK .NET 8.0.100" ou "Aucun SDK détecté" (fourni par ToolchainDetector, Dev 4).</summary>
-    public void SetToolchain(string text) => StatusToolchain.Content = text;
+    public void SetToolchain(string text)
+    {
+        StatusToolchain.Content = text;
+        _editorTabs.ToolchainWelcome = text;
+    }
 
     // ---------- Gestionnaires d'événements XAML ----------
     private void ExplorerButton_Click(object sender, RoutedEventArgs e) => ToggleExplorer();

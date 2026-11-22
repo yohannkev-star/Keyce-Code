@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,17 +15,59 @@ namespace Keyce.Controls;
 /// <summary>Hôte d'éditeur multi-documents intégrable dans la fenêtre principale.</summary>
 public partial class EditorTabs : UserControl, INotifyPropertyChanged
 {
+    private static readonly string RecentWorkspacesFile = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Keyce Code", "recent-workspaces.json");
     private IEditorService? _editorService;
     private bool _synchronizingSelection;
     private EditorDocument? _selectedDocument;
+    private bool _hasDocuments;
+    private string _toolchainWelcome = "Exécutez vos programmes avec F5";
 
     public EditorTabs()
     {
         InitializeComponent();
         DataContext = this;
+        LoadRecentWorkspaces();
     }
 
     public ObservableCollection<EditorDocument> Documents { get; } = [];
+    public ObservableCollection<RecentWorkspace> RecentWorkspaces { get; } = [];
+
+    public bool HasDocuments
+    {
+        get => _hasDocuments;
+        private set
+        {
+            if (_hasDocuments == value) return;
+            _hasDocuments = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string ToolchainWelcome
+    {
+        get => _toolchainWelcome;
+        set
+        {
+            if (_toolchainWelcome == value) return;
+            _toolchainWelcome = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public event Action<string>? RecentWorkspaceRequested;
+
+    public void AddRecentWorkspace(string path)
+    {
+        if (!Directory.Exists(path)) return;
+        var normalizedPath = Path.GetFullPath(path);
+        var existing = RecentWorkspaces.FirstOrDefault(item =>
+            string.Equals(item.Path, normalizedPath, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) RecentWorkspaces.Remove(existing);
+        RecentWorkspaces.Insert(0, new RecentWorkspace(Path.GetFileName(normalizedPath), normalizedPath));
+        while (RecentWorkspaces.Count > 8) RecentWorkspaces.RemoveAt(RecentWorkspaces.Count - 1);
+        SaveRecentWorkspaces();
+    }
 
     public EditorDocument? SelectedDocument
     {
@@ -217,12 +260,49 @@ public partial class EditorTabs : UserControl, INotifyPropertyChanged
             }
 
             SelectedDocument = _editorService.ActiveDocument;
+            HasDocuments = Documents.Count > 0;
             TabsList.SelectedItem = SelectedDocument;
             ActiveDocumentChanged?.Invoke(this, EventArgs.Empty);
         }
         finally
         {
             _synchronizingSelection = false;
+        }
+    }
+
+    private void RecentWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is RecentWorkspace workspace)
+            RecentWorkspaceRequested?.Invoke(workspace.Path);
+    }
+
+    private void LoadRecentWorkspaces()
+    {
+        try
+        {
+            if (!File.Exists(RecentWorkspacesFile)) return;
+            var items = JsonSerializer.Deserialize<List<RecentWorkspace>>(File.ReadAllText(RecentWorkspacesFile));
+            if (items is null) return;
+            foreach (var item in items.Where(item => Directory.Exists(item.Path)).Take(8))
+                RecentWorkspaces.Add(item);
+            if (items.Count != RecentWorkspaces.Count) SaveRecentWorkspaces();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            // Un historique indisponible ne doit pas empêcher le démarrage de l'éditeur.
+        }
+    }
+
+    private void SaveRecentWorkspaces()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(RecentWorkspacesFile)!);
+            File.WriteAllText(RecentWorkspacesFile, JsonSerializer.Serialize(RecentWorkspaces.ToArray()));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // L'historique reste facultatif si le profil utilisateur n'est pas accessible.
         }
     }
 
@@ -296,3 +376,5 @@ public partial class EditorTabs : UserControl, INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
+
+public sealed record RecentWorkspace(string Name, string Path);
