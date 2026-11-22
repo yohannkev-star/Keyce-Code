@@ -1,0 +1,45 @@
+<UserControl x:Class="Keyce.Controls.ExplorerPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="{DynamicResource ExplorerBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                Text="EXPLORATEUR"
+                Margin="12,8"
+                   FontSize="11"
+                Foreground="{DynamicResource ForegroundDim}"/>
+
+        <TreeView x:Name="Tree"
+                Grid.Row="1"
+                BorderThickness="0"
+                  Background="Transparent"
+                  Foreground="{DynamicResource Foreground}"
+                  ItemsSource="{Binding Nodes}"
+                  MouseDoubleClick="Tree_MouseDoubleClick">
+
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded"
+                            Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Icon}"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   Margin="0,0,6,0"
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Name}"
+                                VerticalAlignment="Center"/>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+    </Grid>
+</UserControl>
