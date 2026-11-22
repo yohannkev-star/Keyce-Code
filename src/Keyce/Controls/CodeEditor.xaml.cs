@@ -2,8 +2,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.IO;
+using System.Xml;
+using System.Windows.Media;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Keyce.Models;
 
 namespace Keyce.Controls;
@@ -11,6 +14,11 @@ namespace Keyce.Controls;
 /// <summary>Éditeur AvalonEdit réutilisable avec navigation, recherche et coloration par extension.</summary>
 public partial class CodeEditor : UserControl
 {
+    private static readonly Lazy<IHighlightingDefinition> CSharpDefinition =
+        new(CreateCSharpDefinition);
+    private static readonly Lazy<IHighlightingDefinition> PythonDefinition =
+        new(LoadPythonDefinition);
+
     private EditorDocument? _document;
     private bool _loadingDocument;
 
@@ -142,14 +150,112 @@ public partial class CodeEditor : UserControl
             ".js" or ".jsx" or ".ts" or ".tsx" => "JavaScript",
             ".java" => "Java",
             ".cpp" or ".cc" or ".cxx" or ".h" or ".hpp" => "C++",
-            ".c" => "C",
-            ".py" => "Python",
+            ".c" => "C++",
             _ => null
         };
 
-        TextEditorControl.SyntaxHighlighting = definitionName is null
-            ? null
-            : HighlightingManager.Instance.GetDefinition(definitionName);
+        TextEditorControl.SyntaxHighlighting = extension switch
+        {
+            ".cs" => CSharpDefinition.Value,
+            ".py" => PythonDefinition.Value,
+            _ => definitionName is null
+                ? null
+                : HighlightingManager.Instance.GetDefinition(definitionName)
+        };
+    }
+
+    private static IHighlightingDefinition LoadPythonDefinition()
+    {
+        using var stream = typeof(CodeEditor).Assembly.GetManifestResourceStream("Keyce.Resources.Python.xshd")
+            ?? throw new InvalidOperationException("La définition Python.xshd est introuvable.");
+        using var textReader = new StreamReader(stream);
+        var xshd = textReader.ReadToEnd()
+            .Replace("%KEYWORD%", GetPaletteColor("Syntax.Keyword"), StringComparison.Ordinal)
+            .Replace("%CONTROL%", GetPaletteColor("Syntax.Control"), StringComparison.Ordinal)
+            .Replace("%TYPE%", GetPaletteColor("Syntax.Type"), StringComparison.Ordinal)
+            .Replace("%METHOD%", GetPaletteColor("Syntax.Method"), StringComparison.Ordinal)
+            .Replace("%STRING%", GetPaletteColor("Syntax.String"), StringComparison.Ordinal)
+            .Replace("%COMMENT%", GetPaletteColor("Syntax.Comment"), StringComparison.Ordinal)
+            .Replace("%NUMBER%", GetPaletteColor("Syntax.Number"), StringComparison.Ordinal);
+
+        using var reader = XmlReader.Create(new StringReader(xshd));
+        return HighlightingLoader.Load(reader, HighlightingManager.Instance);
+    }
+
+    private static IHighlightingDefinition CreateCSharpDefinition()
+    {
+        var xshd = """
+            <SyntaxDefinition name="C#" extensions=".cs" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+              <Color name="Keyword" foreground="%KEYWORD%" />
+              <Color name="Control" foreground="%CONTROL%" />
+              <Color name="Type" foreground="%TYPE%" />
+              <Color name="Method" foreground="%METHOD%" />
+              <Color name="String" foreground="%STRING%" />
+              <Color name="Comment" foreground="%COMMENT%" />
+              <Color name="Number" foreground="%NUMBER%" />
+              <RuleSet>
+                <Span color="Comment" begin="/\*" end="\*/" multiline="true" />
+                <Span color="String" begin="&quot;" end="&quot;">
+                  <RuleSet><Span begin="\\" end="." /></RuleSet>
+                </Span>
+                <Span color="String" begin="'" end="'">
+                  <RuleSet><Span begin="\\" end="." /></RuleSet>
+                </Span>
+                <Span color="Comment" begin="//" />
+                <Keywords color="Control">
+                  <Word>if</Word><Word>else</Word><Word>switch</Word><Word>case</Word>
+                  <Word>default</Word><Word>for</Word><Word>foreach</Word><Word>while</Word>
+                  <Word>do</Word><Word>break</Word><Word>continue</Word><Word>return</Word>
+                  <Word>throw</Word><Word>try</Word><Word>catch</Word><Word>finally</Word>
+                  <Word>yield</Word>
+                </Keywords>
+                <Keywords color="Keyword">
+                  <Word>abstract</Word><Word>as</Word><Word>async</Word><Word>await</Word>
+                  <Word>base</Word><Word>bool</Word><Word>byte</Word><Word>char</Word>
+                  <Word>checked</Word><Word>class</Word><Word>const</Word><Word>decimal</Word>
+                  <Word>delegate</Word><Word>double</Word><Word>enum</Word><Word>event</Word>
+                  <Word>extern</Word><Word>false</Word><Word>file</Word><Word>fixed</Word>
+                  <Word>float</Word><Word>global</Word><Word>goto</Word><Word>implicit</Word>
+                  <Word>in</Word><Word>int</Word><Word>interface</Word><Word>internal</Word>
+                  <Word>is</Word><Word>lock</Word><Word>long</Word><Word>namespace</Word>
+                  <Word>new</Word><Word>null</Word><Word>object</Word><Word>operator</Word>
+                  <Word>out</Word><Word>override</Word><Word>params</Word><Word>private</Word>
+                  <Word>protected</Word><Word>public</Word><Word>readonly</Word><Word>ref</Word>
+                  <Word>sbyte</Word><Word>sealed</Word><Word>short</Word><Word>sizeof</Word>
+                  <Word>stackalloc</Word><Word>static</Word><Word>string</Word><Word>struct</Word>
+                  <Word>this</Word><Word>true</Word><Word>typeof</Word><Word>uint</Word>
+                  <Word>ulong</Word><Word>unchecked</Word><Word>unsafe</Word><Word>ushort</Word>
+                  <Word>using</Word><Word>virtual</Word><Word>void</Word><Word>volatile</Word>
+                  <Word>var</Word><Word>record</Word><Word>required</Word><Word>init</Word>
+                  <Word>with</Word><Word>when</Word><Word>where</Word><Word>get</Word><Word>set</Word>
+                  <Word>add</Word><Word>remove</Word><Word>value</Word><Word>partial</Word>
+                </Keywords>
+                <Rule color="Number">\b(0[xX][0-9A-Fa-f]+|\d+(\.\d+)?([eE][+-]?\d+)?)[fFdDmMuUlL]*\b</Rule>
+                <Rule color="Type">\b[A-Z][A-Za-z0-9_]*\b</Rule>
+                <Rule color="Method">\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()</Rule>
+              </RuleSet>
+            </SyntaxDefinition>
+            """;
+
+        xshd = xshd
+            .Replace("%KEYWORD%", GetPaletteColor("Syntax.Keyword"), StringComparison.Ordinal)
+            .Replace("%CONTROL%", GetPaletteColor("Syntax.Control"), StringComparison.Ordinal)
+            .Replace("%TYPE%", GetPaletteColor("Syntax.Type"), StringComparison.Ordinal)
+            .Replace("%METHOD%", GetPaletteColor("Syntax.Method"), StringComparison.Ordinal)
+            .Replace("%STRING%", GetPaletteColor("Syntax.String"), StringComparison.Ordinal)
+            .Replace("%COMMENT%", GetPaletteColor("Syntax.Comment"), StringComparison.Ordinal)
+            .Replace("%NUMBER%", GetPaletteColor("Syntax.Number"), StringComparison.Ordinal);
+
+        using var reader = XmlReader.Create(new StringReader(xshd));
+        return HighlightingLoader.Load(reader, HighlightingManager.Instance);
+    }
+
+    private static string GetPaletteColor(string resourceKey)
+    {
+        var color = Application.Current?.TryFindResource(resourceKey);
+        return color is Color value
+            ? value.ToString()
+            : throw new InvalidOperationException($"Ressource de couleur manquante : {resourceKey}");
     }
 
     private void FindNext_Click(object sender, RoutedEventArgs e) => Find(1);
