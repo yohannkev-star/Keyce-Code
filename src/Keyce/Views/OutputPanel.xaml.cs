@@ -8,7 +8,7 @@ using Keyce.Services;
 
 namespace Keyce.Views;
 
-public enum OutputKind { Info, Error, Warning }
+public enum OutputKind { Info, Error, Warning, Success }
 
 public partial class OutputPanel : UserControl
 {
@@ -69,6 +69,7 @@ public partial class OutputPanel : UserControl
     {
         OutputKind.Error   => TryFindResource("Output.Error") as Brush,
         OutputKind.Warning => TryFindResource("Output.Warning") as Brush,
+        OutputKind.Success => TryFindResource("Output.Success") as Brush,
         _                  => TryFindResource("Output.Info") as Brush
     };
 

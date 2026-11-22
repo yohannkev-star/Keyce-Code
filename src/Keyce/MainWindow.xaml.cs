@@ -1,10 +1,13 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.IO;
 using Microsoft.Win32;
 using Keyce.Controls;
+using Keyce.Models;
 using Keyce.Services;
 using Keyce.ViewModels;
+using Keyce.Views;
 
 namespace Keyce;
 
@@ -19,6 +22,11 @@ public partial class MainWindow : Window
     private readonly EditorService _editorService;
     private readonly EditorTabs _editorTabs;
     private readonly ExplorerViewModel _explorerViewModel;
+    private readonly ProjectService _projectService;
+    private readonly IRunnerService _runnerService;
+    private readonly IToolchainDetector _toolchainDetector;
+    private readonly OutputPanel _outputPanel;
+    private string? _lastRunDirectory;
 
     // ---------- Événements à brancher par l'intégration ----------
     public event EventHandler? NewFileRequested;      // Dev 3 / Dev 2
@@ -48,6 +56,10 @@ public partial class MainWindow : Window
         _editorService = new EditorService(_fileService);
         _editorTabs = new EditorTabs();
         _explorerViewModel = new ExplorerViewModel();
+        _projectService = new ProjectService();
+        _runnerService = new ProcessRunner();
+        _toolchainDetector = new ToolchainDetector();
+        _outputPanel = new OutputPanel();
 
         _editorTabs.ActiveDocumentChanged += (_, _) => UpdateEditorStatus();
         _editorTabs.CaretPositionChanged += (_, _) =>
@@ -59,6 +71,11 @@ public partial class MainWindow : Window
         SetExplorerContent(explorer);
         _explorerViewModel.FileOpenRequested += path => _ = OpenEditorFileAsync(path);
 
+        SetOutputContent(_outputPanel);
+        _runnerService.OutputReceived += _outputPanel.OnOutputReceived;
+        _outputPanel.StopRequested += _runnerService.Stop;
+        _outputPanel.ErrorClicked += OpenErrorLocation;
+
         NewFileRequested += (_, _) => _editorTabs.NewDocument();
         OpenFileRequested += async (_, _) => await OpenFileAsync();
         OpenFolderRequested += (_, _) => OpenFolder();
@@ -67,8 +84,12 @@ public partial class MainWindow : Window
         CloseTabRequested += async (_, _) => await CloseSelectedDocumentAsync();
         FindRequested += (_, _) => _editorTabs.Editor.ShowFind();
         GoToLineRequested += (_, _) => _editorTabs.Editor.PromptForLine();
+        RunRequested += async (_, _) => await RunCurrentAsync();
+        StopRequested += (_, _) => _runnerService.Stop();
+        ClearOutputRequested += (_, _) => _outputPanel.Clear();
 
         UpdateEditorStatus();
+        _ = DetectToolchainAsync();
     }
 
     private async Task OpenFileAsync()
@@ -83,18 +104,20 @@ public partial class MainWindow : Window
             await OpenEditorFileAsync(dialog.FileName);
     }
 
-    private async Task OpenEditorFileAsync(string path)
+    private async Task<bool> OpenEditorFileAsync(string path)
     {
         try
         {
             await _editorTabs.LoadFileAsync(path);
             SetStatusMessage($"Ouvert : {path}");
             UpdateEditorStatus();
+            return true;
         }
         catch (Exception exception)
         {
             MessageBox.Show(this, exception.Message, "Impossible d'ouvrir le fichier",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
         }
     }
 
@@ -142,6 +165,128 @@ public partial class MainWindow : Window
     {
         SetLanguage(_editorTabs.CurrentLanguage);
         SetCaretPosition(_editorTabs.CaretLine, _editorTabs.CaretColumn);
+    }
+
+    private async Task DetectToolchainAsync()
+    {
+        try
+        {
+            var tools = await _toolchainDetector.DetectAsync();
+            var dotnet = tools.FirstOrDefault(tool => tool.Name.Equals("dotnet", StringComparison.OrdinalIgnoreCase));
+            SetToolchain(dotnet is null ? "Aucun SDK .NET détecté" : $"SDK .NET {dotnet.Version}");
+        }
+        catch (Exception exception)
+        {
+            SetToolchain("Détection SDK impossible");
+            SetStatusMessage(exception.Message);
+        }
+    }
+
+    private async Task RunCurrentAsync()
+    {
+        if (_runnerService.IsRunning)
+        {
+            SetStatusMessage("Une exécution est déjà en cours.");
+            return;
+        }
+
+        var document = _editorTabs.SelectedDocument;
+        if (document is not null)
+        {
+            if (document.FilePath is null || document.IsDirty)
+                await SaveEditorAsync();
+
+            if (document.FilePath is null || document.IsDirty)
+            {
+                SetStatusMessage("Enregistre le fichier avant de l'exécuter.");
+                return;
+            }
+        }
+
+        var target = ResolveExecutionTarget(document);
+        if (target is null)
+        {
+            SetStatusMessage("Ouvre un projet ou un fichier pris en charge avant d'appuyer sur F5.");
+            return;
+        }
+
+        _lastRunDirectory = Directory.Exists(target)
+            ? target
+            : Path.GetDirectoryName(target);
+        _outputPanel.Clear();
+        ShowOutputPanel();
+        SetStatusMessage("Exécution en cours...");
+
+        try
+        {
+            var result = await _runnerService.RunAsync(target);
+            var summary = result.WasCancelled
+                ? "Exécution arrêtée."
+                : result.Success
+                    ? $"Terminé avec le code {result.ExitCode} ({result.Duration.TotalSeconds:F1} s)."
+                    : $"Échec avec le code {result.ExitCode} ({result.Duration.TotalSeconds:F1} s).";
+            _outputPanel.Append(summary, result.Success ? OutputKind.Success : OutputKind.Info);
+            SetStatusMessage(summary);
+        }
+        catch (Exception exception)
+        {
+            _outputPanel.AppendLine(exception.Message, true);
+            SetStatusMessage("Échec de l'exécution");
+        }
+    }
+
+    private string? ResolveExecutionTarget(EditorDocument? document)
+    {
+        if (document?.FilePath is { } filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+            if (extension.Equals(".cs", StringComparison.OrdinalIgnoreCase))
+            {
+                var projectDirectory = FindProjectDirectory(Path.GetDirectoryName(filePath));
+                if (projectDirectory is null)
+                {
+                    MessageBox.Show(this,
+                        "Aucun projet .NET (.csproj) trouvé dans ce dossier ou ses dossiers parents. Ouvre un projet Console C# pour exécuter ce fichier.",
+                        "Projet .NET introuvable", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return null;
+                }
+                return projectDirectory;
+            }
+
+            return filePath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_explorerViewModel.RootPath))
+            return _explorerViewModel.RootPath;
+
+        return null;
+    }
+
+    private string? FindProjectDirectory(string? startDirectory)
+    {
+        var directory = startDirectory;
+        while (!string.IsNullOrWhiteSpace(directory))
+        {
+            if (_projectService.FindProjectFile(directory) is not null)
+                return directory;
+
+            var parent = Directory.GetParent(directory)?.FullName;
+            if (parent is null || string.Equals(parent, directory, StringComparison.OrdinalIgnoreCase))
+                break;
+            directory = parent;
+        }
+
+        return null;
+    }
+
+    private async void OpenErrorLocation(string file, int line)
+    {
+        var fullPath = Path.IsPathRooted(file)
+            ? file
+            : Path.GetFullPath(Path.Combine(_lastRunDirectory ?? Environment.CurrentDirectory, file));
+
+        if (await OpenEditorFileAsync(fullPath))
+            _editorTabs.OpenAtLine(line);
     }
 
     // ---------- Commandes ----------
