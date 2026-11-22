@@ -140,6 +140,15 @@ public sealed class ProcessRunner : IRunnerService
                     return DotnetSteps(directory, path);
                 case ".py":
                     return new[] { new Step("python", new[] { path }, directory) };
+                case ".c":
+{
+    var exe = Path.Combine(directory, Path.GetFileNameWithoutExtension(path) + ".exe");
+    return new[]
+    {
+        new Step("gcc", new[] { path, "-o", exe }, directory),
+        new Step(exe, Array.Empty<string>(), directory)
+    };
+}
                 case ".js":
                     return new[] { new Step("node", new[] { path }, directory) };
                 default:
