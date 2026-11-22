@@ -42,6 +42,7 @@
             </MenuItem>
             <MenuItem Header="_Affichage">
                 <MenuItem Header="Explorateur" Command="{x:Static local:AppCommands.ToggleExplorer}"/>
+                <MenuItem Header="Rechercher dans les fichiers" InputGestureText="Ctrl+Maj+F" Click="SearchMenu_Click"/>
                 <MenuItem Header="Panneau (Sortie)" Command="{x:Static local:AppCommands.TogglePanel}" InputGestureText="Ctrl+`"/>
             </MenuItem>
             <MenuItem Header="E_xécuter">
@@ -97,8 +98,8 @@
                         <ToggleButton x:Name="ExplorerButton" Style="{StaticResource ActivityToggle}"
                                       Content="&#xE8B7;" IsChecked="True" ToolTip="Explorateur (Ctrl+B)"
                                       Click="ExplorerButton_Click"/>
-                        <Button Style="{StaticResource ActivityButton}" Content="&#xE721;"
-                                ToolTip="Recherche (bientôt)" IsEnabled="False"/>
+                        <ToggleButton x:Name="SearchButton" Style="{StaticResource ActivityToggle}" Content="&#xE721;"
+                                      ToolTip="Rechercher dans les fichiers" Click="SearchButton_Click"/>
                         <Button Style="{StaticResource ActivityButton}" Content="&#xE768;"
                                 ToolTip="Exécuter (F5)" Command="{x:Static local:AppCommands.Run}"/>
                     </StackPanel>
@@ -127,6 +128,9 @@
                     </ContentControl>
                 </Grid>
             </Border>
+
+            <ContentControl x:Name="SearchPanelHost" Grid.Column="1" Visibility="Collapsed"
+                            Background="{DynamicResource Sidebar.Background}"/>
 
             <GridSplitter x:Name="ExplorerSplitter" Grid.Column="2" Width="4" HorizontalAlignment="Center"
                           VerticalAlignment="Stretch" ResizeDirection="Columns"

@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly EditorService _editorService;
     private readonly EditorTabs _editorTabs;
     private readonly ExplorerViewModel _explorerViewModel;
+    private readonly SearchPanel _searchPanel;
     private readonly ProjectService _projectService;
     private readonly IRunnerService _runnerService;
     private readonly IToolchainDetector _toolchainDetector;
@@ -56,6 +57,7 @@ public partial class MainWindow : Window
         _editorService = new EditorService(_fileService);
         _editorTabs = new EditorTabs();
         _explorerViewModel = new ExplorerViewModel();
+        _searchPanel = new SearchPanel();
         _projectService = new ProjectService();
         _runnerService = new ProcessRunner();
         _toolchainDetector = new ToolchainDetector();
@@ -70,6 +72,8 @@ public partial class MainWindow : Window
 
         var explorer = new ExplorerPanel { DataContext = _explorerViewModel };
         SetExplorerContent(explorer);
+        SearchPanelHost.Content = _searchPanel;
+        _searchPanel.ResultActivated += OpenErrorLocation;
         _explorerViewModel.FileOpenRequested += path => _ = OpenEditorFileAsync(path);
 
         SetOutputContent(_outputPanel);
@@ -134,6 +138,7 @@ public partial class MainWindow : Window
     private void OpenFolderPath(string path)
     {
         _explorerViewModel.OpenFolder(path);
+        _searchPanel.RootPath = path;
         _editorTabs.AddRecentWorkspace(path);
         SetStatusMessage($"Dossier ouvert : {path}");
     }
@@ -180,6 +185,11 @@ public partial class MainWindow : Window
             case "explorer":
                 if (!_explorerVisible) ToggleExplorer();
                 return;
+            case "rechercher":
+            case "search":
+                ShowSidebar(search: true);
+                _searchPanel.FocusQuery();
+                return;
             case "sortie":
             case "terminal":
             case "output":
@@ -197,6 +207,13 @@ public partial class MainWindow : Window
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.F)
+        {
+            ShowSidebar(search: true);
+            _searchPanel.FocusQuery();
+            e.Handled = true;
+            return;
+        }
         if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.P)
         {
             CommandCenter.Focus();
@@ -398,17 +415,43 @@ public partial class MainWindow : Window
             ExplorerColumn.MinWidth = 0;
             ExplorerColumn.Width = new GridLength(0);
             ExplorerPanel.Visibility = Visibility.Collapsed;
+            SearchPanelHost.Visibility = Visibility.Collapsed;
             ExplorerSplitter.Visibility = Visibility.Collapsed;
+            _explorerVisible = false;
+            _searchVisible = false;
         }
         else
         {
+            ShowSidebar(search: false);
+        }
+        ExplorerButton.IsChecked = _explorerVisible && !_searchVisible;
+        SearchButton.IsChecked = _explorerVisible && _searchVisible;
+    }
+
+    private bool _searchVisible;
+
+    private void ShowSidebar(bool search)
+    {
+        if (!_explorerVisible)
+        {
             ExplorerColumn.MinWidth = 150;
             ExplorerColumn.Width = new GridLength(_explorerWidth);
-            ExplorerPanel.Visibility = Visibility.Visible;
             ExplorerSplitter.Visibility = Visibility.Visible;
         }
-        _explorerVisible = !_explorerVisible;
-        ExplorerButton.IsChecked = _explorerVisible;
+        _explorerVisible = true;
+        _searchVisible = search;
+        ExplorerPanel.Visibility = search ? Visibility.Collapsed : Visibility.Visible;
+        SearchPanelHost.Visibility = search ? Visibility.Visible : Visibility.Collapsed;
+        ExplorerButton.IsChecked = !search;
+        SearchButton.IsChecked = search;
+    }
+
+    private void ToggleSearchPanel()
+    {
+        if (_explorerVisible && _searchVisible)
+            ToggleExplorer();
+        else
+            ShowSidebar(search: true);
     }
 
     public void TogglePanel()
@@ -463,7 +506,19 @@ public partial class MainWindow : Window
     }
 
     // ---------- Gestionnaires d'événements XAML ----------
-    private void ExplorerButton_Click(object sender, RoutedEventArgs e) => ToggleExplorer();
+    private void ExplorerButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_explorerVisible && !_searchVisible) ToggleExplorer();
+        else ShowSidebar(search: false);
+    }
+
+    private void SearchButton_Click(object sender, RoutedEventArgs e) => ToggleSearchPanel();
+
+    private void SearchMenu_Click(object sender, RoutedEventArgs e)
+    {
+        ShowSidebar(search: true);
+        _searchPanel.FocusQuery();
+    }
 
     private void PanelTab_Checked(object sender, RoutedEventArgs e)
     {
