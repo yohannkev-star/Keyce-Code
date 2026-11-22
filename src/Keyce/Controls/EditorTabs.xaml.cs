@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,6 +42,21 @@ public partial class EditorTabs : UserControl, INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? TextChanged;
     public event EventHandler? CaretPositionChanged;
+    public event EventHandler? ActiveDocumentChanged;
+
+    public int CaretLine => Editor.CaretLine;
+    public int CaretColumn => Editor.CaretColumn;
+
+    public string CurrentLanguage => Path.GetExtension(_editorService?.ActiveDocument?.FilePath ?? string.Empty).ToLowerInvariant() switch
+    {
+        ".cs" => "C#",
+        ".py" => "Python",
+        ".js" => "JavaScript",
+        ".java" => "Java",
+        ".c" => "C",
+        ".cpp" or ".cc" or ".cxx" => "C++",
+        _ => "Texte brut"
+    };
 
     /// <summary>Connecte le contrôle à l'implémentation partagée du service éditeur.</summary>
     public void Initialize(IEditorService editorService)
@@ -95,6 +111,37 @@ public partial class EditorTabs : UserControl, INotifyPropertyChanged
         }
 
         await _editorService.SaveAsync(document, path, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>> SaveAllAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureService();
+        var errors = new List<string>();
+        var previous = _editorService!.ActiveDocument;
+        try
+        {
+            foreach (var document in _editorService.OpenDocuments.Where(document => document.IsDirty).ToArray())
+            {
+                Activate(document);
+                try
+                {
+                    await SaveCurrentAsync(cancellationToken);
+                    if (document.IsDirty)
+                        errors.Add($"Enregistrement annulé : {document.DisplayName}");
+                }
+                catch (Exception exception)
+                {
+                    errors.Add($"{document.DisplayName} : {exception.Message}");
+                }
+            }
+        }
+        finally
+        {
+            if (previous is not null && _editorService.OpenDocuments.Contains(previous))
+                Activate(previous);
+        }
+
+        return errors;
     }
 
     public async Task<bool> CloseDocumentAsync(EditorDocument document, CancellationToken cancellationToken = default)
@@ -171,6 +218,7 @@ public partial class EditorTabs : UserControl, INotifyPropertyChanged
 
             SelectedDocument = _editorService.ActiveDocument;
             TabsList.SelectedItem = SelectedDocument;
+            ActiveDocumentChanged?.Invoke(this, EventArgs.Empty);
         }
         finally
         {

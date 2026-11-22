@@ -1,6 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Win32;
+using Keyce.Controls;
+using Keyce.Services;
+using Keyce.ViewModels;
 
 namespace Keyce;
 
@@ -11,6 +15,11 @@ namespace Keyce;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private readonly FileService _fileService;
+    private readonly EditorService _editorService;
+    private readonly EditorTabs _editorTabs;
+    private readonly ExplorerViewModel _explorerViewModel;
+
     // ---------- Événements à brancher par l'intégration ----------
     public event EventHandler? NewFileRequested;      // Dev 3 / Dev 2
     public event EventHandler? OpenFileRequested;     // Dev 3
@@ -34,6 +43,105 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         RegisterCommands();
+
+        _fileService = new FileService();
+        _editorService = new EditorService(_fileService);
+        _editorTabs = new EditorTabs();
+        _explorerViewModel = new ExplorerViewModel();
+
+        _editorTabs.ActiveDocumentChanged += (_, _) => UpdateEditorStatus();
+        _editorTabs.CaretPositionChanged += (_, _) =>
+            SetCaretPosition(_editorTabs.CaretLine, _editorTabs.CaretColumn);
+        _editorTabs.Initialize(_editorService);
+        SetEditorContent(_editorTabs);
+
+        var explorer = new ExplorerPanel { DataContext = _explorerViewModel };
+        SetExplorerContent(explorer);
+        _explorerViewModel.FileOpenRequested += path => _ = OpenEditorFileAsync(path);
+
+        NewFileRequested += (_, _) => _editorTabs.NewDocument();
+        OpenFileRequested += async (_, _) => await OpenFileAsync();
+        OpenFolderRequested += (_, _) => OpenFolder();
+        SaveRequested += async (_, _) => await SaveEditorAsync();
+        SaveAllRequested += async (_, _) => await SaveAllEditorsAsync();
+        CloseTabRequested += async (_, _) => await CloseSelectedDocumentAsync();
+        FindRequested += (_, _) => _editorTabs.Editor.ShowFind();
+        GoToLineRequested += (_, _) => _editorTabs.Editor.PromptForLine();
+
+        UpdateEditorStatus();
+    }
+
+    private async Task OpenFileAsync()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Ouvrir un fichier",
+            Filter = "Tous les fichiers (*.*)|*.*|Fichiers C# (*.cs)|*.cs",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) == true)
+            await OpenEditorFileAsync(dialog.FileName);
+    }
+
+    private async Task OpenEditorFileAsync(string path)
+    {
+        try
+        {
+            await _editorTabs.LoadFileAsync(path);
+            SetStatusMessage($"Ouvert : {path}");
+            UpdateEditorStatus();
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Impossible d'ouvrir le fichier",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void OpenFolder()
+    {
+        var dialog = new OpenFolderDialog { Title = "Ouvrir un dossier de projet" };
+        if (dialog.ShowDialog(this) != true)
+            return;
+
+        _explorerViewModel.OpenFolder(dialog.FolderName);
+        SetStatusMessage($"Dossier ouvert : {dialog.FolderName}");
+    }
+
+    private async Task SaveEditorAsync()
+    {
+        try
+        {
+            await _editorTabs.SaveCurrentAsync();
+            SetStatusMessage("Fichier enregistré");
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Impossible d'enregistrer le fichier",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async Task SaveAllEditorsAsync()
+    {
+        var errors = await _editorTabs.SaveAllAsync();
+        if (errors.Count > 0)
+            MessageBox.Show(this, string.Join(Environment.NewLine, errors), "Certains fichiers n'ont pas été enregistrés",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        else
+            SetStatusMessage("Tous les fichiers sont enregistrés");
+    }
+
+    private async Task CloseSelectedDocumentAsync()
+    {
+        if (_editorTabs.SelectedDocument is { } document)
+            await _editorTabs.CloseDocumentAsync(document);
+    }
+
+    private void UpdateEditorStatus()
+    {
+        SetLanguage(_editorTabs.CurrentLanguage);
+        SetCaretPosition(_editorTabs.CaretLine, _editorTabs.CaretColumn);
     }
 
     // ---------- Commandes ----------

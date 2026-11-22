@@ -11,9 +11,25 @@ namespace Keyce.Services
         public string Error { get; set; } = "";
     }
 
-    public class FileService
+    public class FileService : IFileService
     {
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
+
+        public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
+            File.ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
+
+        public Task WriteAllTextAsync(string path, string content, CancellationToken cancellationToken = default) =>
+            File.WriteAllTextAsync(path, content, Utf8, cancellationToken);
+
+        public bool FileExists(string path) => File.Exists(path);
+
+        public IReadOnlyList<string> GetFiles(string directoryPath) => Directory.GetFiles(directoryPath);
+
+        public IReadOnlyList<string> GetDirectories(string directoryPath) => Directory.GetDirectories(directoryPath);
+
+        public void DeleteFile(string path) => File.Delete(path);
+
+        public void MoveFile(string oldPath, string newPath) => File.Move(oldPath, newPath);
 
         public FileResult ReadFile(string path)
         {
