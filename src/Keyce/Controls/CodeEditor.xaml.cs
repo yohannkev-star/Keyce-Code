@@ -16,6 +16,8 @@ public partial class CodeEditor : UserControl
 {
     private static readonly Lazy<IHighlightingDefinition> CSharpDefinition =
         new(CreateCSharpDefinition);
+    private static readonly Lazy<IHighlightingDefinition> PythonDefinition =
+        new(LoadPythonDefinition);
 
     private EditorDocument? _document;
     private bool _loadingDocument;
@@ -149,15 +151,35 @@ public partial class CodeEditor : UserControl
             ".java" => "Java",
             ".cpp" or ".cc" or ".cxx" or ".h" or ".hpp" => "C++",
             ".c" => "C",
-            ".py" => "Python",
             _ => null
         };
 
-        TextEditorControl.SyntaxHighlighting = extension == ".cs"
-            ? CSharpDefinition.Value
-            : definitionName is null
+        TextEditorControl.SyntaxHighlighting = extension switch
+        {
+            ".cs" => CSharpDefinition.Value,
+            ".py" => PythonDefinition.Value,
+            _ => definitionName is null
                 ? null
-                : HighlightingManager.Instance.GetDefinition(definitionName);
+                : HighlightingManager.Instance.GetDefinition(definitionName)
+        };
+    }
+
+    private static IHighlightingDefinition LoadPythonDefinition()
+    {
+        using var stream = typeof(CodeEditor).Assembly.GetManifestResourceStream("Keyce.Resources.Python.xshd")
+            ?? throw new InvalidOperationException("La définition Python.xshd est introuvable.");
+        using var textReader = new StreamReader(stream);
+        var xshd = textReader.ReadToEnd()
+            .Replace("%KEYWORD%", GetPaletteColor("Syntax.Keyword"), StringComparison.Ordinal)
+            .Replace("%CONTROL%", GetPaletteColor("Syntax.Control"), StringComparison.Ordinal)
+            .Replace("%TYPE%", GetPaletteColor("Syntax.Type"), StringComparison.Ordinal)
+            .Replace("%METHOD%", GetPaletteColor("Syntax.Method"), StringComparison.Ordinal)
+            .Replace("%STRING%", GetPaletteColor("Syntax.String"), StringComparison.Ordinal)
+            .Replace("%COMMENT%", GetPaletteColor("Syntax.Comment"), StringComparison.Ordinal)
+            .Replace("%NUMBER%", GetPaletteColor("Syntax.Number"), StringComparison.Ordinal);
+
+        using var reader = XmlReader.Create(new StringReader(xshd));
+        return HighlightingLoader.Load(reader, HighlightingManager.Instance);
     }
 
     private static IHighlightingDefinition CreateCSharpDefinition()
@@ -172,10 +194,14 @@ public partial class CodeEditor : UserControl
               <Color name="Comment" foreground="%COMMENT%" />
               <Color name="Number" foreground="%NUMBER%" />
               <RuleSet>
-                <Span color="Comment" begin="/\*" end="\*/" />
-                <Span color="String" begin="&quot;" end="&quot;" escapeCharacter="\" />
-                <Span color="String" begin="'" end="'" escapeCharacter="\" />
-                <Rule color="Comment">//.*$</Rule>
+                <Span color="Comment" begin="/\*" end="\*/" multiline="true" />
+                <Span color="String" begin="&quot;" end="&quot;">
+                  <RuleSet><Span begin="\\" end="." /></RuleSet>
+                </Span>
+                <Span color="String" begin="'" end="'">
+                  <RuleSet><Span begin="\\" end="." /></RuleSet>
+                </Span>
+                <Span color="Comment" begin="//" />
                 <Keywords color="Control">
                   <Word>if</Word><Word>else</Word><Word>switch</Word><Word>case</Word>
                   <Word>default</Word><Word>for</Word><Word>foreach</Word><Word>while</Word>

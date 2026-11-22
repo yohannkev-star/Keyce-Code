@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <EmbeddedResource Include="Resources\Python.xshd" LogicalName="Keyce.Resources.Python.xshd" />
   </ItemGroup>
 
 </Project>
